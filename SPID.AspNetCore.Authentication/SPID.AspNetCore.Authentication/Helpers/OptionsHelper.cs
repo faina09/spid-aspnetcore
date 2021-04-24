@@ -58,11 +58,8 @@ namespace SPID.AspNetCore.Authentication.Helpers
                     var findType = storeConfiguration.GetValue<X509FindType>("FindType");
                     var findValue = storeConfiguration.GetValue<string>("FindValue");
                     var validOnly = storeConfiguration.GetValue<bool>("validOnly");
-                    options.Certificate = X509Helpers.GetCertificateFromStore(
-                                        StoreLocation.CurrentUser, StoreName.My,
-                                        X509FindType.FindBySubjectName,
-                                        findValue,
-                                        validOnly: false);
+                    //SC202104 use the values get from configuration!!
+                    options.Certificate = X509Helpers.GetCertificateFromStore(location, name, findType, findValue, validOnly: false);
                 }
                 else if (certificateSource == "File")
                 {

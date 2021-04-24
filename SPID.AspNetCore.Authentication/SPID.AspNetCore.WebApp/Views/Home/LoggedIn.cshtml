@@ -1,7 +1,17 @@
 ﻿@{
-	ViewData["Title"] = "Logged in";
+    ViewData["Title"] = "Logged in";
 }
 <h1>@ViewData["Title"]</h1>
 
 <p>Hey @User.Identity.Name you are loggedin</p>
 
+<dl>
+    @foreach (var idc in User.Claims)
+    {
+        if (!string.IsNullOrEmpty(idc.Value))
+        {
+            <dt>@idc.Type</dt>
+            <dd>@idc.Value</dd>
+        }
+    }
+</dl>

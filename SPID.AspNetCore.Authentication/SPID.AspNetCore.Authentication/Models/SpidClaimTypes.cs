@@ -26,5 +26,11 @@ namespace SPID.AspNetCore.Authentication.Models
         public static string PlaceOfBirth = nameof(PlaceOfBirth);
         public static string RegisteredOffice = nameof(RegisteredOffice);
         public static string SpidCode = nameof(SpidCode);
+        //SC202104 CodiceFiscale (!!) e altri campi ritornati da Shibboleth Cineca
+        public static string schacPersonalUniqueID = nameof(schacPersonalUniqueID);
+        public static string sn = nameof(sn);
+        public static string givenName = nameof(givenName);
+        public static string title = nameof(title);
+        public static string uid = nameof(uid);
     }
 }

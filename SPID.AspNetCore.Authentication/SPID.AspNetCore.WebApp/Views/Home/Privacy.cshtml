@@ -5,3 +5,11 @@
 
 <p>Use this page to detail your site's privacy policy.</p>
 @User.Identity.Name
+
+<dl>
+@foreach (var idc in User.Claims)
+{
+    <dt>@idc.Type</dt>
+    <dd>@idc.Value</dd>
+}
+</dl>

@@ -361,7 +361,15 @@ namespace SPID.AspNetCore.Authentication
                 new Claim( SpidClaimTypes.PlaceOfBirth, idpAuthnResponse.GetAssertion().GetAttributeStatement().GetAttributes().FirstOrDefault(x => SamlConst.placeOfBirth.Equals(x.Name) || SamlConst.placeOfBirth.Equals(x.FriendlyName))?.GetAttributeValue()?.Trim() ?? string.Empty),
                 new Claim( SpidClaimTypes.RegisteredOffice, idpAuthnResponse.GetAssertion().GetAttributeStatement().GetAttributes().FirstOrDefault(x => SamlConst.registeredOffice.Equals(x.Name) || SamlConst.registeredOffice.Equals(x.FriendlyName))?.GetAttributeValue()?.Trim() ?? string.Empty),
                 new Claim( SpidClaimTypes.SpidCode, idpAuthnResponse.GetAssertion().GetAttributeStatement().GetAttributes().FirstOrDefault(x => SamlConst.spidCode.Equals(x.Name) || SamlConst.spidCode.Equals(x.FriendlyName))?.GetAttributeValue()?.Trim() ?? string.Empty),
+                //SC202104 CodiceFiscale (schacPersonalUniqueID!!) etc in caso di SecurityLevel 4=SpidPP
+                new Claim( SpidClaimTypes.schacPersonalUniqueID, idpAuthnResponse.GetAssertion().GetAttributeStatement().GetAttributes().FirstOrDefault(x => SamlConst.schacPersonalUniqueID.Equals(x.Name) || SamlConst.schacPersonalUniqueID.Equals(x.FriendlyName))?.GetAttributeValue()?.Trim() ?? string.Empty),
+                new Claim( SpidClaimTypes.sn, idpAuthnResponse.GetAssertion().GetAttributeStatement().GetAttributes().FirstOrDefault(x => SamlConst.sn.Equals(x.Name) || SamlConst.sn.Equals(x.FriendlyName))?.GetAttributeValue()?.Trim() ?? string.Empty),
+                new Claim( SpidClaimTypes.givenName, idpAuthnResponse.GetAssertion().GetAttributeStatement().GetAttributes().FirstOrDefault(x => SamlConst.givenName.Equals(x.Name) || SamlConst.givenName.Equals(x.FriendlyName))?.GetAttributeValue()?.Trim() ?? string.Empty),
+                new Claim( SpidClaimTypes.title, idpAuthnResponse.GetAssertion().GetAttributeStatement().GetAttributes().FirstOrDefault(x => SamlConst.title.Equals(x.Name) || SamlConst.title.Equals(x.FriendlyName))?.GetAttributeValue()?.Trim() ?? string.Empty),
+                //SC202104 CodiceFiscale in caso di SecurityLevel 5=SpidExt
+                new Claim( SpidClaimTypes.uid, idpAuthnResponse.GetAssertion().GetAttributeStatement().GetAttributes().FirstOrDefault(x => SamlConst.uid.Equals(x.Name) || SamlConst.uid.Equals(x.FriendlyName))?.GetAttributeValue()?.Trim() ?? string.Empty)
             };
+            //TODO SC202104 identity from uid if Cineca
             var identity = new ClaimsIdentity(claims, Scheme.Name, SamlConst.email, null);
 
             var returnedPrincipal = new ClaimsPrincipal(identity);
@@ -405,8 +413,20 @@ namespace SPID.AspNetCore.Authentication
 
         private bool ValidateSignOutResponse(LogoutResponseType response, LogoutRequestType request)
         {
-            var valid = response.Status.StatusCode.Value == SamlConst.Success && SamlHandler.ValidateLogoutResponse(response, request);
-            if (valid)
+            //SC202104 gestione status:UnknownPrincipal
+            var valid = SamlHandler.ValidateLogoutResponse(response, request);
+            if (response.Status.StatusCode.Value.Equals(SamlConst.Requester, StringComparison.InvariantCultureIgnoreCase))
+            {
+                if (valid)
+                {
+                    return true; //va bene lo stesso se Response=UnknownPrincipal
+                }
+                else
+                {
+                    throw new Exception(response.Status.StatusCode.StatusCode.Value);
+                }
+            }
+            if (response.Status.StatusCode.Value == SamlConst.Success && valid)
             {
                 return true;
             }

@@ -12,6 +12,7 @@
 
         public static string Version = "2.0";
         public static string Success = "urn:oasis:names:tc:SAML:2.0:status:Success";
+        public static string Requester = "urn:oasis:names:tc:SAML:2.0:status:Requester"; //SC202104
         public static string IssuerFormat = "urn:oasis:names:tc:SAML:2.0:nameid-format:entity";
         public static string ProtocolBinding = "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST";
         public static string NameIDPolicyFormat = "urn:oasis:names:tc:SAML:2.0:nameid-format:transient";
@@ -20,9 +21,11 @@
         public static string samlp = nameof(samlp);
         public static string saml = nameof(saml);
         public static string Saml2Assertion = "urn:oasis:names:tc:SAML:2.0:assertion";
-        public static string SpidL3 = "https://www.spid.gov.it/SpidL3";
         public static string SpidL1 = "https://www.spid.gov.it/SpidL1";
         public static string SpidL2 = "https://www.spid.gov.it/SpidL2";
+        public static string SpidL3 = "https://www.spid.gov.it/SpidL3";
+        public static string SpidPP = "urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport";//SC202104 "SecurityLevel": 4
+        public static string SpidExt = "urn:oasis:names:tc:SAML:2.0:ac:classes:SPIDExtended";//SC202104 "SecurityLevel": 5
         public static string Method = "urn:oasis:names:tc:SAML:2.0:cm:bearer";
         public static string name = nameof(name);
         public static string familyName = nameof(familyName);
@@ -44,6 +47,11 @@
         public static string placeOfBirth = nameof(placeOfBirth);
         public static string registeredOffice = nameof(registeredOffice);
         public static string spidCode = nameof(spidCode);
-
+        //SC202104 CodiceFiscale (!!) e altri campi ritornati da Shibboleth Cineca
+        public static string schacPersonalUniqueID = nameof(schacPersonalUniqueID);
+        public static string sn = nameof(sn);
+        public static string givenName = nameof(givenName);
+        public static string title = nameof(title);
+        public static string uid = nameof(uid);
     }
 }

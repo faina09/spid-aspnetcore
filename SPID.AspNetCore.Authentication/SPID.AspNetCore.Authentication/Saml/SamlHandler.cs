@@ -22,11 +22,15 @@ namespace SPID.AspNetCore.Authentication.Saml
             { typeof(LogoutRequestType), new XmlSerializer(typeof(LogoutRequestType)) },
             { typeof(LogoutResponseType), new XmlSerializer(typeof(LogoutResponseType)) },
         };
+
+        //SC202104
         private static readonly List<string> listAuthRefValid = new List<string>
         {
             SamlConst.SpidL1,
             SamlConst.SpidL2,
-            SamlConst.SpidL3
+            SamlConst.SpidL3,
+            SamlConst.SpidPP,
+            SamlConst.SpidExt
         };
 
         /// <summary>
@@ -180,6 +184,11 @@ namespace SPID.AspNetCore.Authentication.Saml
 
             if (!response.Status.StatusCode.Value.Equals(SamlConst.Success, StringComparison.InvariantCultureIgnoreCase))
             {
+                //SC202104
+                if (response.Status.StatusCode.Value.Equals(SamlConst.Requester, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    throw new Exception(response.Status.StatusCode.StatusCode.Value);
+                }
                 if (int.TryParse(response.Status.StatusMessage?.Replace("ErrorCode nr", ""), out var errorCode))
                 {
                     switch (errorCode)
@@ -244,12 +253,24 @@ namespace SPID.AspNetCore.Authentication.Saml
                 SamlConst.placeOfBirth,
                 SamlConst.registeredOffice,
                 SamlConst.spidCode,
+                //SC202104 attributes from Shibboleth Cineca
+                SamlConst.schacPersonalUniqueID,
+                SamlConst.sn,
+                SamlConst.givenName,
+                SamlConst.title,
+                SamlConst.uid,
             };
 
+            //SC202104 TODO better check if from Shibboleth Cineca
+            bool IsCineca = metadataIdp.EntityID == "https://uniud.idp.pp.cineca.it/idp/shibboleth";
             var attribute = response.GetAssertion().GetAttributeStatement().GetAttributes();
             List<string> attributeNames = new List<string>();
             attributeNames.AddRange(attribute.Where(x => !string.IsNullOrWhiteSpace(x.Name) && !x.Name.StartsWith("urn")).Select(x => x.Name).ToList());
-            BusinessValidation.ValidationCondition(() => attributeNames.Count() == 0, ErrorLocalization.AttributeRequiredNotFound);
+            //SC202104 test disabled if Cineca
+            if (!IsCineca)
+            {
+                BusinessValidation.ValidationCondition(() => attributeNames.Count() == 0, ErrorLocalization.AttributeRequiredNotFound);
+            }
             if (attributeNames.Count() > 0)
             {
                 BusinessValidation.ValidationCondition(() => attributeNames.Any(x => !listAttribute.Contains(x)), ErrorLocalization.AttributeRequiredNotFound);
@@ -261,7 +282,8 @@ namespace SPID.AspNetCore.Authentication.Saml
                 listAttribute.Add(SamlConst.mail);
                 attributeNames.AddRange(attribute.Where(x => !string.IsNullOrWhiteSpace(x.FriendlyName)).Select(x => x.FriendlyName).ToList());
                 BusinessValidation.ValidationCondition(() => attributeNames.Count() == 0, ErrorLocalization.AttributeRequiredNotFound);
-                if (attributeNames.Count() > 0)
+                //SC202104 test disabled if Cineca
+                if (attributeNames.Count() > 0 && !IsCineca)
                 {
                     BusinessValidation.ValidationCondition(() => listAttribute.All(x => !attributeNames.Contains(x)), ErrorLocalization.AttributeRequiredNotFound);
                 }
@@ -327,14 +349,20 @@ namespace SPID.AspNetCore.Authentication.Saml
             BusinessValidation.ValidationCondition(() => response.GetAssertion().Subject.GetSubjectConfirmation().SubjectConfirmationData.NotOnOrAfter == null, string.Format(ErrorLocalization.NotSpecified, "Assertion.SubjectConfirmationData.NotOnOrAfter"));
             BusinessValidation.ValidationCondition(() => response.GetAssertion().Subject.GetSubjectConfirmation().SubjectConfirmationData.NotOnOrAfter == DateTime.MinValue, string.Format(ErrorLocalization.Missing, "Assertion.SubjectConfirmationData.NotOnOrAfter"));
             DateTimeOffset notOnOrAfter = new DateTimeOffset(response.GetAssertion().Subject.GetSubjectConfirmation().SubjectConfirmationData.NotOnOrAfter);
-            BusinessValidation.ValidationCondition(() => notOnOrAfter < DateTimeOffset.UtcNow, ErrorLocalization.NotOnOrAfterLessThenRequest);
-
+            //SC202104 test disabled if Cineca
+            if (!IsCineca)
+            {
+                BusinessValidation.ValidationCondition(() => notOnOrAfter < DateTimeOffset.UtcNow, ErrorLocalization.NotOnOrAfterLessThenRequest);
+            }
             BusinessValidation.ValidationNotNullNotWhitespace(response.GetAssertion().Issuer?.Value, ErrorFields.Issuer);
             BusinessValidation.ValidationCondition(() => !response.GetAssertion().Issuer.Value.Equals(metadataIdp.EntityID), string.Format(ErrorLocalization.ParameterNotValid, ErrorFields.Issuer));
-            BusinessValidation.ValidationCondition(() => response.GetAssertion().Issuer.Format == null, string.Format(ErrorLocalization.NotSpecified, "Assertion.Issuer.Format"));
-            BusinessValidation.ValidationCondition(() => string.IsNullOrWhiteSpace(response.GetAssertion().Issuer.Format), string.Format(ErrorLocalization.Missing, "Assertion.Issuer.Format"));
-            BusinessValidation.ValidationCondition(() => !response.GetAssertion().Issuer.Format.Equals(request.Issuer.Format), string.Format(ErrorLocalization.ParameterNotValid, ErrorFields.Format));
-
+            //SC202104 3 tests disabled if Cineca
+            if (!IsCineca)
+            {
+                BusinessValidation.ValidationCondition(() => response.GetAssertion().Issuer.Format == null, string.Format(ErrorLocalization.NotSpecified, "Assertion.Issuer.Format"));
+                BusinessValidation.ValidationCondition(() => string.IsNullOrWhiteSpace(response.GetAssertion().Issuer.Format), string.Format(ErrorLocalization.Missing, "Assertion.Issuer.Format"));
+                BusinessValidation.ValidationCondition(() => !response.GetAssertion().Issuer.Format.Equals(request.Issuer.Format), string.Format(ErrorLocalization.ParameterNotValid, ErrorFields.Format));
+            }
             BusinessValidation.ValidationCondition(() => response.GetAssertion().Conditions == null, string.Format(ErrorLocalization.NotSpecified, "Assertion.Conditions"));
             BusinessValidation.ValidationCondition(() => response.GetAssertion().Conditions.GetAudienceRestriction() == null && string.IsNullOrWhiteSpace(response.GetAssertion().Conditions.NotBefore) && string.IsNullOrWhiteSpace(response.GetAssertion().Conditions.NotOnOrAfter), string.Format(ErrorLocalization.Missing, "Assertion.Conditions"));
 
