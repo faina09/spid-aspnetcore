@@ -39,12 +39,12 @@ namespace SPID.AspNetCore.WebApp.Controllers
 
         public IActionResult Login()
         {
-            return Challenge(new AuthenticationProperties { RedirectUri = "/home/loggedin" }, SpidDefaults.AuthenticationScheme);
+            return Challenge(new AuthenticationProperties { RedirectUri = "home/loggedin" }, SpidDefaults.AuthenticationScheme);
         }
 
         public IActionResult Logout()
         {
-            return SignOut(new AuthenticationProperties { RedirectUri = "/home/loggedout" }, SpidDefaults.AuthenticationScheme);
+            return SignOut(new AuthenticationProperties { RedirectUri = "home/loggedout" }, SpidDefaults.AuthenticationScheme);
         }
 
         public IActionResult LoggedIn()

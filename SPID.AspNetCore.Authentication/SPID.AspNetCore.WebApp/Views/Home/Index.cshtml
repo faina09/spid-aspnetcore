@@ -1,16 +1,17 @@
 ﻿@{
-	ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Home Page";
 }
 @section styles {
-	<style spid></style>
+<style spid></style>
 }
 
 <div class="text-center">
-	<h1 class="display-4">Welcome</h1>
-	<spid-providers challenge-url="/home/login" size="Medium" circle-image-path="~/spid-ico-circle-bb.png" class="text-left"></spid-providers>
-	<div class="text-left"><a href="/home/login?idpname=CINECA"><img src="~/spid-ico-circle-bb.png" alt="Login Cineca" style="width: 50px;"/>Shibboleth Cineca</a></div>
+    <h1 class="display-4">Welcome</h1>
+    <spid-providers challenge-url="~/home/login" size="Medium" circle-image-path="~/spid-ico-circle-bb.png" class="text-left"></spid-providers>
+    <div class="text-left"><a href="~/home/login?idpname=CINECAEsse3"><img src="~/spid-ico-circle-bb.png" alt="Login Cineca" style="width: 50px;" />Shibboleth Cineca</a> Utenti Esse3</div>
+    <div class="text-left"><a href="~/home/login?idpname=CINECASpid"><img src="~/spid-ico-circle-bb.png" alt="Login Cineca" style="width: 50px;" />Shibboleth Cineca</a> Utenti SPID</div>
 </div>
 
 @section scripts {
-	<script spid></script>
+<script spid></script>
 }

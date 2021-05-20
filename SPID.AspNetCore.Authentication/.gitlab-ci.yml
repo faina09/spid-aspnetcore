@@ -1,0 +1,89 @@
+variables:
+  SOLUTION_NAME: "SPID.AspNetCore.Authentication"
+  PROJECT_NAME: "SPID.AspNetCore.WebApp"
+  WEB_DIR: "SpidCineca"
+  APPPOOL_NAME: "NetCoreSpid"
+  GIT_DEPTH: "1000"
+  GIT_FETCH_EXTRA_FLAGS: --tags
+  OUT_DIR: ".\\SpidCineca\\bin\\publish"
+
+image: microsoft/dotnet:latest
+
+stages:
+  - build
+  - deploy
+
+before_script:
+  - echo "************************** COMPILA in .\$SOLUTION_NAME\$PROJECT_NAME\$OUT_DIR e COPIA sui server di Preprod/Prod in \wwwroot\$WEB_DIR"
+  - $datetime = Get-Date
+
+build_all:
+  stage: build
+  only:
+    - preprod
+    - master
+  tags:
+    - NET48-PS
+  before_script:
+    - echo "starting build for $SOLUTION_NAME\$PROJECT_NAME"
+    - cd $SOLUTION_NAME\$PROJECT_NAME
+  script:
+    - echo "Test Building the project"
+    - dotnet publish $PROJECT_NAME.csproj -c release -o $OUT_DIR
+  allow_failure: false
+
+.deploy:
+  stage: deploy
+  tags:
+    - NET48-PS
+  before_script:
+    - cd $SOLUTION_NAME\$PROJECT_NAME
+  script:
+    - echo "Build for $PROJECT_NAME ($CONFIGURATION) and deploy to $SRV_NAME ip $SRV_IP in $WEB_DIR"
+    - if (!(Test-Path Variable:\PROJECT_NAME) -or !(Test-Path Variable:\SRV_IP) -or !(Test-Path Variable:\CONFIGURATION) -or !(Test-Path Variable:\WEB_DIR)) {exit 1}
+    - dotnet publish $PROJECT_NAME.csproj -c $CONFIGURATION -o $OUT_DIR
+    - echo "<html><body>Revisione GIT = $CI_COMMIT_SHA </br> Branch GIT = $CI_COMMIT_REF_SLUG </br> GitLab Build ID = $CI_JOB_ID </br> DateTime $(Get-Date) </br></body></html>" > $OUT_DIR\wwwroot\info.html
+    - echo "Shutting down application pool..."
+    - Invoke-Command -ComputerName $SRV_NAME -ScriptBlock { param($app_pool) Import-Module WebAdministration; Stop-WebAppPool -Name "$app_pool" } -ArgumentList $APPPOOL_NAME
+    - echo "Copying files..."
+    - robocopy /NP /E /r:3 /w:10 $OUT_DIR \\$SRV_IP\inetpub\wwwroot\$WEB_DIR; exit ($LastExitCode -band 24)
+  after_script:
+    - echo "Starting up application pool..."
+    - Invoke-Command -ComputerName $SRV_NAME -ScriptBlock { param($app_pool) Import-Module WebAdministration; Start-WebAppPool -Name "$app_pool" } -ArgumentList $APPPOOL_NAME
+    - echo "End Deploy to $SERVER_IP\inetpub\wwwroot\$WEB_DIR"
+  dependencies:
+    - build_all
+  allow_failure: false
+
+deploy_preprod:
+  extends: .deploy
+  only: 
+    - preprod
+    - master
+  variables:
+    SRV_IP: "158.110.104.176"
+    SRV_NAME: "SRV-PWEB5-FLO1"
+    CONFIGURATION: "PREPROD"
+  environment:
+    name: preprod
+    url: https://preprod.amm.uniud.it/$WEB_DIR
+  allow_failure: false
+#  when: manual
+
+deploy_prod:
+  extends: .deploy
+  only: 
+    - master
+  variables:
+    SRV_IP: "158.110.104.178"
+    SRV_NAME: "SRV-WEB5-FLO1"
+    CONFIGURATION: "PRODUCTION"
+  environment:
+    name: release
+    url: https://servizi.amm.uniud.it/$WEB_DIR
+  allow_failure: false
+  when: manual
+
+after_script:
+  - dir
+  - dir .\$SOLUTION_NAME\$PROJECT_NAME\$OUT_DIR

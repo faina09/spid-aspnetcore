@@ -1,10 +1,14 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using NLog;
+using NLog.Extensions.Logging;
 using SPID.AspNetCore.Authentication;
 using SPID.AspNetCore.Authentication.Events;
 using SPID.AspNetCore.Authentication.Helpers;
@@ -22,6 +26,7 @@ namespace SPID.AspNetCore.WebApp
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
+            NLog.LogManager.Configuration = new NLogLoggingConfiguration(configuration.GetSection("NLog"));
         }
 
         public IConfiguration Configuration { get; }
@@ -45,7 +50,7 @@ namespace SPID.AspNetCore.WebApp
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, ILogger<Startup> logger, IWebHostEnvironment env)
         {
             if (env.IsDevelopment())
             {
@@ -66,9 +71,18 @@ namespace SPID.AspNetCore.WebApp
 
             app.UseEndpoints(endpoints => {
                 endpoints.MapControllerRoute(
-                                    name: "default",
-                                    pattern: "{controller=Home}/{action=Index}/{id?}");
+                    name: "default",
+                    pattern: "{controller=Home}/{action=Index}/{id?}");
+                if (env.IsDevelopment() || env.EnvironmentName.ToLowerInvariant() == "preprod")
+                {
+                    endpoints.MapGet("/debug-config", ctx => {
+                        var config = (Configuration as IConfigurationRoot).GetDebugView();
+                        return ctx.Response.WriteAsync(config);
+                    });
+                }
             });
+
+            logger.LogInformation($"****** Starting app SpidCineca");
         }
 
         public class CustomSpidEvents : SpidEvents

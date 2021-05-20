@@ -369,8 +369,9 @@ namespace SPID.AspNetCore.Authentication
                 //SC202104 CodiceFiscale in caso di SecurityLevel 5=SpidExt
                 new Claim( SpidClaimTypes.uid, idpAuthnResponse.GetAssertion().GetAttributeStatement().GetAttributes().FirstOrDefault(x => SamlConst.uid.Equals(x.Name) || SamlConst.uid.Equals(x.FriendlyName))?.GetAttributeValue()?.Trim() ?? string.Empty)
             };
-            //TODO SC202104 identity from uid if Cineca
-            var identity = new ClaimsIdentity(claims, Scheme.Name, SamlConst.email, null);
+            //SC202104 identity from uid if email blank (Cineca)
+            var email = claims?.FirstOrDefault(x => x.Type.Equals(SamlConst.email, StringComparison.OrdinalIgnoreCase))?.Value;
+            var identity = new ClaimsIdentity(claims, Scheme.Name, email != "" ? SamlConst.email : SamlConst.uid, null);
 
             var returnedPrincipal = new ClaimsPrincipal(identity);
             return (returnedPrincipal, new DateTimeOffset(idpAuthnResponse.IssueInstant), new DateTimeOffset(idpAuthnResponse.GetAssertion().Subject.GetSubjectConfirmation().SubjectConfirmationData.NotOnOrAfter));
